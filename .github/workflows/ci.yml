@@ -16,10 +16,11 @@ jobs:
       - name: Instalar o Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 
+          node-version: 20 # Versão estável do Node
 
       - name: Instalar dependências e testar o Servidor
         run: |
+          cd Server
           npm install
           # npm test (Descomente esta linha quando criarmos os testes reais!)
 
@@ -36,5 +37,6 @@ jobs:
 
       - name: Instalar dependências e buildar o React
         run: |
+          cd Client
           npm install
           npm run build # Garante que o React compila sem erros de sintaxe
