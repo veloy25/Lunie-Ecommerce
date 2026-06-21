@@ -38,5 +38,6 @@ jobs:
       - name: Instalar dependências e buildar o React
         run: |
           cd Client
+          cd client
           npm install
           npm run build # Garante que o React compila sem erros de sintaxe
