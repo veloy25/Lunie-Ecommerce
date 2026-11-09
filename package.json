@@ -1,0 +1,14 @@
+{
+  "name": "lunie-ecommerce",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix Client/client run dev -- --host 0.0.0.0",
+    "build": "npm --prefix Client/client run build",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "npm --prefix Client/client test",
+    "test:backend": "cd Server && .venv/bin/python -m pytest -q tests",
+    "api": "cd Server && .venv/bin/uvicorn app.main:app --reload",
+    "migrate": "cd Server && .venv/bin/alembic upgrade head"
+  }
+}

@@ -1,54 +1,58 @@
-# 🛍️ E-Commerce de Beleza
+# Luniê
 
-<div align="center">
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" alt="CI/CD" />
-</div>
+Loja virtual da Luniê, com catálogo criado a partir das fotos fornecidas, carrinho persistente, conta Google, painel de catálogo, checkout Mercado Pago, cálculo de frete Melhor Envio e acompanhamento por webhooks.
 
-<br />
+Os arquivos recebidos não informavam preços, estoque, peso, dimensões ou descrições aprovadas. Esses campos ficam vazios e os produtos não podem ser comprados até que uma pessoa administradora cadastre dados reais. A loja não inventa preço, disponibilidade ou informação técnica.
 
-Plataforma completa de e-commerce fullstack focada na venda de produtos de beleza e perfumes. Este projeto foi concebido sob conceitos modernos de engenharia de software, priorizando a **segurança de dados**, **escalabilidade de código** e **automação de processos (CI/CD)**.
+## Ambientes e promoção
 
-Projetado como uma solução real para um negócio solo, o sistema opera com **custo zero de infraestrutura**, utilizando as melhores ferramentas de *Free Tier* do mercado.
+O fluxo do repositório é `dev → homolog → main`:
 
----
+| Branch | Ambiente | Uso |
+| --- | --- | --- |
+| `dev` | Desenvolvimento | Trabalho diário; simulação de frete local opcional. |
+| `homolog` | Homologação | Testes integrados; Mercado Pago de teste e Melhor Envio sandbox. |
+| `main` | Produção | Loja real; provedores ao vivo e credenciais de produção. |
 
-## ✨ Funcionalidades Principais
+Promova mudanças por pull request de `dev` para `homolog` e depois de `homolog` para `main`. O GitHub Actions roda build e testes nas três branches. Não coloque credenciais nesses arquivos: `environments/*.env.example` contém somente nomes e valores de referência; configure segredos no ambiente correspondente do provedor de hospedagem/GitHub.
 
-- **Catálogo Dinâmico:** Exibição de produtos com carregamento otimizado de imagens.
-- **Carrinho de Compras Persistente:** Gerenciamento de estado robusto no lado do cliente.
-- **Checkout Transparente:** Integração segura com a API do Mercado Pago.
-- **Webhooks de Pagamento:** Atualização instantânea do status do pedido de forma assíncrona.
-- **Otimização de Mídia:** Armazenamento em nuvem com redimensionamento automático de imagens.
+## Executar localmente
 
----
+Requisitos: Node.js 22 LTS, Python 3.12 e Docker Compose.
 
-## 🛡️ Segurança & Conformidade (LGPD)
+```sh
+cp environments/dev.env.example .env
+docker compose up --build
+```
 
-Para garantir total conformidade com a **Lei Geral de Proteção de Dados (LGPD)** e mitigar riscos de segurança:
-- **Zero armazenamento de dados sensíveis:** Dados de cartões de crédito e informações de pagamento são processados diretamente nos servidores seguros do gateway de pagamento.
-- **Isolamento de Variáveis:** Todas as chaves privadas (`Access Tokens`) são criptografadas em ambiente de produção e nunca são expostas no código-fonte.
+Abra `http://localhost:5173`; a API fica em `http://localhost:8000` e a documentação técnica em `/docs`. Para executar sem Docker, instale os pacotes com `npm install --prefix Client/client --legacy-peer-deps`, crie `Server/.venv` com Python 3.12 e instale `Server/requirements.txt`; então use `npm run dev` e `npm run api` em terminais separados.
 
----
+Comandos de qualidade:
 
-## 📐 Arquitetura do Sistema
+```sh
+npm run build
+npm run test:frontend
+npm run test:backend
+```
 
-O projeto adota a estratégia de **Monorepo**, facilitando o desenvolvimento solo e o versionamento sincronizado entre a interface e a API.
+O backend aplica as migrações Alembic ao iniciar o container. Localmente, `npm run migrate` aplica as migrações manualmente. Para dados pessoais fora de desenvolvimento, gere uma chave Fernet com `Server/.venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'` e forneça-a por `PII_ENCRYPTION_KEY`; use um `SESSION_SECRET` aleatório e mantenha ambos fora do Git.
+
+## Configuração para abrir a loja
+
+1. Cadastre no painel administrativo os preços e estoques confirmados. Preencha peso e dimensões reais para cotar o Melhor Envio.
+2. Configure Google OAuth, Mercado Pago, Melhor Envio, URLs de callback/webhook, `ADMIN_EMAILS`, banco PostgreSQL e chaves de sessão/criptografia para cada ambiente.
+3. Em homologação, use credenciais de teste e o ambiente sandbox; valide login, cotação, pagamento, webhooks e etiqueta antes de promover para `main`.
+4. Preencha e revise as políticas, os contatos e as informações comerciais antes de atender pedidos reais.
+
+## Estrutura
 
 ```text
-ecommerce-beleza/
-├── client/                 # Camada de Visão (React + Vite)
-│   ├── src/
-│   │   ├── components/     # Componentes de interface reutilizáveis
-│   │   ├── pages/          # Páginas da aplicação (Home, Checkout, etc)
-│   │   └── services/       # Módulo de integração com a API (Axios)
-│   └── package.json
-│
-└── server/                 # API RESTful (Node.js + Express)
-    ├── src/
-    │   ├── modules/        # Domínios isolados de negócio (Produtos, Pedidos)
-    │   └── shared/         # Recursos globais (Conexão do Banco, Middlewares)
-    └── package.json
+Client/client/       React + TypeScript + Vite + Tailwind
+Server/app/          FastAPI, domínio, casos de uso e adaptadores externos
+Server/migrations/   Migrações Alembic
+Server/tests/        Testes de domínio e catálogo
+catalog/             Manifesto de produtos recebidos
+environments/        Modelos de variáveis por ambiente (sem segredos)
+```
+
+O frontend está hospedado como Site privado para revisão. O serviço Sites serve arquivos estáticos; para operar pagamentos, login e frete, hospede a API e o PostgreSQL separadamente e configure `VITE_API_URL` com o endereço público da API.

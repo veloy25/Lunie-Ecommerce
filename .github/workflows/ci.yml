@@ -1,43 +1,49 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [dev, homolog, main]
   pull_request:
-    branches: [ main, master ]
+    branches: [dev, homolog, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  test-backend:
+  frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Copiar código do repositório
-        uses: actions/checkout@v4
-
-      - name: Instalar o Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20 # Versão estável do Node
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Client/client/package-lock.json
+      - run: npm ci --legacy-peer-deps
+        working-directory: Client/client
+      - run: npm test
+        working-directory: Client/client
+      - run: npm run build
+        working-directory: Client/client
 
-      - name: Instalar dependências e testar o Servidor
-        run: |
-          cd Server
-          npm install
-          # npm test (Descomente esta linha quando criarmos os testes reais!)
-
-  test-frontend:
+  backend:
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: development
+      DATABASE_URL: sqlite:///./lunie-ci.db
+      CATALOG_PATH: catalog/products.json
+      SHIPPING_SIMULATION: "true"
     steps:
-      - name: Copiar código do repositório
-        uses: actions/checkout@v4
-
-      - name: Instalar o Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 20
-
-      - name: Instalar dependências e buildar o React
-        run: |
-          cd Client
-          cd client
-          npm install
-          npm run build # Garante que o React compila sem erros de sintaxe
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: Server/requirements.txt
+      - run: python -m pip install -r requirements.txt
+        working-directory: Server
+      - run: alembic upgrade head
+        working-directory: Server
+      - run: python -m pytest -q tests
+        working-directory: Server

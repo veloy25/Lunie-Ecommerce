@@ -1,3 +1,31 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+!environments/*.env.example
+
+# Runtime/build output
+node_modules/
+**/node_modules/
+dist/
+dist-ssr/
+*.local
 .DS_Store
+
+# Python
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+Server/*.db
+Server/*.sqlite
+Server/*.sqlite3
+*.db
+
+# Editor and logs
+.vscode/
+.idea/
+*.log
+npm-debug.log*
 Client/client/node_modules
 Server/node_modules

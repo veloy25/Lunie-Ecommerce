@@ -1,0 +1,66 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lunie
+      POSTGRES_USER: lunie
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lunie-local-only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - lunie-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lunie -d lunie"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: Server/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://lunie:${POSTGRES_PASSWORD:-lunie-local-only}@db:5432/lunie}
+      SESSION_SECRET: ${SESSION_SECRET:-local-development-key-change-before-deploy}
+      PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/auth/google/callback}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      MERCADOPAGO_WEBHOOK_SECRET: ${MERCADOPAGO_WEBHOOK_SECRET:-}
+      MERCADOPAGO_WEBHOOK_URL: ${MERCADOPAGO_WEBHOOK_URL:-}
+      MELHORENVIO_TOKEN: ${MELHORENVIO_TOKEN:-}
+      MELHORENVIO_WEBHOOK_SECRET: ${MELHORENVIO_WEBHOOK_SECRET:-}
+      MELHORENVIO_FROM_POSTAL_CODE: ${MELHORENVIO_FROM_POSTAL_CODE:-}
+      MELHORENVIO_SENDER_JSON: ${MELHORENVIO_SENDER_JSON:-}
+      MELHORENVIO_INVOICE_KEY: ${MELHORENVIO_INVOICE_KEY:-}
+      MELHORENVIO_SANDBOX: ${MELHORENVIO_SANDBOX:-true}
+      MELHORENVIO_USER_AGENT: ${MELHORENVIO_USER_AGENT:-Luniê (suporte técnico a configurar)}
+      SHIPPING_SIMULATION: ${SHIPPING_SIMULATION:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:22-alpine
+    working_dir: /workspace/Client/client
+    command: sh -c "npm ci --legacy-peer-deps && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    volumes:
+      - .:/workspace
+      - lunie-node-modules:/workspace/Client/client/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  lunie-postgres:
+  lunie-node-modules:
